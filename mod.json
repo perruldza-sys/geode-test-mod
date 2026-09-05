@@ -13,7 +13,7 @@
     "repository": "",
     "tags": ["interface", "utility"],
     "resources": {
-        "files": [
+        "sprites": [
             "resources/*.png"
         ],
         "spritesheets": {}
