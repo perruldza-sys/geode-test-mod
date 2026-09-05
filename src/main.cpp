@@ -9,11 +9,10 @@ class $modify(TestButtonMenuLayer, MenuLayer) {
             return false;
         }
 
-        // Bikin sprite tombolnya. Kalau resources/button.png ada, dia bakal
-        // dipakai. Kalau nggak, fallback ke sprite bawaan GD biar tetap jalan.
+        // Bikin sprite tombolnya pakai gambar custom Hoshino Ai.
         auto sprite = CircleButtonSprite::create(
-            CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png"),
-            CircleBaseColor::Green,
+            CCSprite::create("hoshino-button.png"_spr),
+            CircleBaseColor::Pink,
             CircleBaseSize::Medium
         );
 
