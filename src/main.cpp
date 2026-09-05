@@ -24,18 +24,18 @@ class $modify(TestButtonMenuLayer, MenuLayer) {
         );
 
         // Taruh di menu tombol yang sudah ada, biar otomatis kelola layout-nya
-        if (auto menu = this->getChildByID("bottom-menu")) {
+        if (auto bottomMenu = this->getChildByID("bottom-menu")) {
             myButton->setID("test-button"_spr);
-            menu->addChild(myButton);
-            menu->updateLayout();
+            bottomMenu->addChild(myButton);
+            bottomMenu->updateLayout();
         } else {
             // Fallback: taruh manual di pojok kanan atas kalau menu-nya nggak ketemu
             auto winSize = CCDirector::sharedDirector()->getWinSize();
-            auto menu = CCMenu::create();
-            menu->setID("test-button-menu"_spr);
-            menu->addChild(myButton);
-            menu->setPosition({winSize.width - 30.f, winSize.height - 30.f});
-            this->addChild(menu);
+            auto fallbackMenu = CCMenu::create();
+            fallbackMenu->setID("test-button-menu"_spr);
+            fallbackMenu->addChild(myButton);
+            fallbackMenu->setPosition({winSize.width - 30.f, winSize.height - 30.f});
+            this->addChild(fallbackMenu);
         }
 
         return true;
