@@ -2,17 +2,6 @@ cmake_minimum_required(VERSION 3.21)
 project(TestButton VERSION 1.0.0)
 
 # =========================================================
-# INCLUDE GEODE SDK
-# =========================================================
-
-if (NOT DEFINED ENV{GEODE_SDK})
-    message(FATAL_ERROR "GEODE_SDK environment variable not set! "
-                        "Install Geode CLI and run: geode sdk install")
-endif()
-
-include($ENV{GEODE_SDK}/cmake/Geode.cmake)
-
-# =========================================================
 # SOURCE FILES
 # =========================================================
 
@@ -21,7 +10,17 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 )
 
 # =========================================================
-# BUILD MOD
+# GEODE SDK
+# =========================================================
+
+if (NOT DEFINED ENV{GEODE_SDK})
+    message(FATAL_ERROR "GEODE_SDK not set!")
+endif()
+
+include($ENV{GEODE_SDK}/cmake/Geode.cmake)
+
+# =========================================================
+# BUILD
 # =========================================================
 
 geode_plugin_init()
