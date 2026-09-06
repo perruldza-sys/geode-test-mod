@@ -1,9 +1,6 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
-#include <Geode/modify/PlayerObject.hpp>
-#include <Geode/binding/PlayerObject.hpp>
-#include <Geode/binding/PlayLayer.hpp>
 
 using namespace geode::prelude;
 
@@ -19,12 +16,12 @@ static bool isNoclipEnabled = false;
 
 void toggleNoclip() {
     isNoclipEnabled = !isNoclipEnabled;
-    
+
     // Notifikasi
     if (isNoclipEnabled) {
-        Notification::create("🟢 Noclip ON", NotificationIcon::Success)->show();
+        Notification::create("Noclip ON", NotificationIcon::Success)->show();
     } else {
-        Notification::create("🔴 Noclip OFF", NotificationIcon::Error)->show();
+        Notification::create("Noclip OFF", NotificationIcon::Error)->show();
     }
 
     log::info("Noclip: {}", isNoclipEnabled ? "ON" : "OFF");
@@ -74,8 +71,8 @@ class $modify(NoclipMenuLayer, MenuLayer) {
 class $modify(NoclipPlayLayer, PlayLayer) {
     void onEnter() {
         PlayLayer::onEnter();
-        
-        // Auto enable (opsional)
+
+        // Auto enable (opsional, butuh setting "noclip-on-start" di mod.json)
         if (Mod::get()->getSettingValue<bool>("noclip-on-start")) {
             if (!isNoclipEnabled) toggleNoclip();
         }
@@ -89,12 +86,14 @@ class $modify(NoclipPlayLayer, PlayLayer) {
         PlayLayer::keyDown(key);
     }
 
-    void playDeathEffect() {
+    // Ini fungsi yang beneran dipanggil pas player nabrak hazard.
+    // Kalau noclip aktif, kita skip pemanggilan aslinya -> nggak jadi mati.
+    void destroyPlayer(PlayerObject* player, GameObject* object) {
         if (isNoclipEnabled) {
             log::info("Noclip prevented death!");
             return;
         }
-        PlayLayer::playDeathEffect();
+        PlayLayer::destroyPlayer(player, object);
     }
 
     void onQuit() {
@@ -102,26 +101,5 @@ class $modify(NoclipPlayLayer, PlayLayer) {
             isNoclipEnabled = false;
         }
         PlayLayer::onQuit();
-    }
-};
-
-// =========================================================
-// HOOK PLAYER OBJECT - BYPASS COLLISION
-// =========================================================
-
-class $modify(NoclipPlayerObject, PlayerObject) {
-    void pushButton(PlayerButton button) {
-        if (isNoclipEnabled) return;
-        PlayerObject::pushButton(button);
-    }
-
-    void releaseButton(PlayerButton button) {
-        if (isNoclipEnabled) return;
-        PlayerObject::releaseButton(button);
-    }
-
-    bool canBeCollidedWith(PlayerObject* other) {
-        if (isNoclipEnabled) return false;
-        return PlayerObject::canBeCollidedWith(other);
     }
 };
