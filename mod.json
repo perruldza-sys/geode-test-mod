@@ -13,11 +13,10 @@
     "repository": "https://github.com/perruldza-sys/geode-test-mod",
     "tags": ["cheat", "utility"],
     "settings": {
-        "noclip-on-start": {
-            "name": "Enable on start",
-            "description": "Nyalakan noclip otomatis saat level dimulai",
-            "type": "bool",
-            "default": false
-        }
+    "noclip-on-start": {
+        "name": "Noclip saat mulai level",
+        "type": "bool",
+        "default": false
+    }
     }
 }
