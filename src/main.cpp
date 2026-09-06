@@ -78,12 +78,12 @@ class $modify(NoclipPlayLayer, PlayLayer) {
         }
     }
 
-    void keyDown(cocos2d::enumKeyCodes key) {
-        if (key == cocos2d::KEY_N) {
-            toggleNoclip();
-            return;
-        }
-        PlayLayer::keyDown(key);
+    void keyDown(cocos2d::enumKeyCodes key, double dt) {
+    if (key == cocos2d::KEY_N) {
+        toggleNoclip();
+        return;
+    }
+    PlayLayer::keyDown(key, dt);
     }
 
     // Ini fungsi yang beneran dipanggil pas player nabrak hazard.
