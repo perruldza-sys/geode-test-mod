@@ -1,5 +1,5 @@
 #include <Geode/Geode.hpp>
-#include <Geode/modify/MenuLayer.hpp>
+#include <Geode/modify/AppDelegate.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 
 using namespace geode::prelude;
@@ -9,10 +9,6 @@ using namespace geode::prelude;
 // =========================================================
 
 static bool isNoclipEnabled = false;
-
-// =========================================================
-// TOGGLE FUNCTION
-// =========================================================
 
 void toggleNoclip() {
     isNoclipEnabled = !isNoclipEnabled;
@@ -27,14 +23,14 @@ void toggleNoclip() {
 }
 
 // =========================================================
-// PANEL YANG BISA DI-DRAG, DIBUKA, DITUTUP
+// PANEL (dibuka/tutup lewat icon floating)
 // =========================================================
 
 class HoshinoPanel : public CCLayer {
 protected:
+    CCPoint m_panelSize = {220.f, 160.f};
     bool m_dragging = false;
     CCPoint m_touchOffset;
-    CCPoint m_panelSize = {220.f, 160.f};
 
 public:
     static HoshinoPanel* create() {
@@ -52,14 +48,11 @@ public:
 
         auto winSize = CCDirector::sharedDirector()->getWinSize();
 
-        // Background panel
         auto bg = CCScale9Sprite::create("GJ_square01.png");
         bg->setContentSize(m_panelSize);
         bg->setPosition({m_panelSize.x / 2, m_panelSize.y / 2});
-        bg->setID("hoshino-panel-bg"_spr);
         this->addChild(bg, 0);
 
-        // Judul
         auto title = CCLabelBMFont::create("Hoshino Panel", "bigFont.fnt");
         title->setScale(0.5f);
         title->setPosition({m_panelSize.x / 2, m_panelSize.y - 15.f});
@@ -69,7 +62,6 @@ public:
         menu->setPosition({0.f, 0.f});
         this->addChild(menu, 2);
 
-        // Tombol close (X) di pojok kanan atas
         auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         auto closeBtn = CCMenuItemSpriteExtra::create(
             closeSprite, this, menu_selector(HoshinoPanel::onClose)
@@ -77,7 +69,6 @@ public:
         closeBtn->setPosition({m_panelSize.x - 15.f, m_panelSize.y - 15.f});
         menu->addChild(closeBtn);
 
-        // Tombol toggle noclip di tengah panel
         auto noclipSprite = CircleButtonSprite::create(
             CCSprite::create("hoshino-button.png"_spr),
             CircleBaseColor::Pink,
@@ -102,8 +93,6 @@ public:
         return true;
     }
 
-    // Cuma bagian atas (header, 30px teratas) yang bisa dipakai buat drag,
-    // biar nggak nabrak sama tombol-tombol di dalam panel.
     bool isInHeader(CCPoint local) {
         return local.x >= 0 && local.x <= m_panelSize.x
             && local.y >= m_panelSize.y - 30.f && local.y <= m_panelSize.y;
@@ -125,13 +114,8 @@ public:
         }
     }
 
-    void ccTouchEnded(CCTouch* touch, CCEvent* event) {
-        m_dragging = false;
-    }
-
-    void ccTouchCancelled(CCTouch* touch, CCEvent* event) {
-        m_dragging = false;
-    }
+    void ccTouchEnded(CCTouch* touch, CCEvent* event) { m_dragging = false; }
+    void ccTouchCancelled(CCTouch* touch, CCEvent* event) { m_dragging = false; }
 
     void onClose(CCObject* sender) {
         this->removeFromParentAndCleanup(true);
@@ -143,56 +127,140 @@ public:
 };
 
 // =========================================================
-// HOOK MENU LAYER - TOMBOL HOSHINO BUKA PANEL
+// FLOATING OVERLAY - ICON HOSHINO YANG GLOBAL & BISA DI-DRAG
 // =========================================================
 
-class $modify(TestButtonMenuLayer, MenuLayer) {
+class HoshinoOverlay : public CCLayer {
+protected:
+    CCSprite* m_icon = nullptr;
+    HoshinoPanel* m_panel = nullptr;
+
+    bool m_dragging = false;
+    CCPoint m_touchStartLocal;
+    CCPoint m_iconStartPos;
+
+    static constexpr float kDragThreshold = 10.f;
+
+public:
+    static HoshinoOverlay* create() {
+        auto ret = new HoshinoOverlay();
+        if (ret && ret->init()) {
+            ret->autorelease();
+            return ret;
+        }
+        CC_SAFE_DELETE(ret);
+        return nullptr;
+    }
+
     bool init() {
-        if (!MenuLayer::init()) {
-            return false;
-        }
+        if (!CCLayer::init()) return false;
 
-        auto sprite = CircleButtonSprite::create(
-            CCSprite::create("hoshino-button.png"_spr),
-            CircleBaseColor::Pink,
-            CircleBaseSize::Medium
-        );
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
 
-        auto myButton = CCMenuItemSpriteExtra::create(
-            sprite,
-            this,
-            menu_selector(TestButtonMenuLayer::onTestButton)
-        );
+        float defaultX = winSize.width - 40.f;
+        float defaultY = 40.f;
+        float posX = Mod::get()->getSavedValue<float>("hoshino-pos-x", defaultX);
+        float posY = Mod::get()->getSavedValue<float>("hoshino-pos-y", defaultY);
 
-        if (auto bottomMenu = this->getChildByID("bottom-menu")) {
-            myButton->setID("test-button"_spr);
-            bottomMenu->addChild(myButton);
-            bottomMenu->updateLayout();
-        } else {
-            auto winSize = CCDirector::sharedDirector()->getWinSize();
-            auto fallbackMenu = CCMenu::create();
-            fallbackMenu->setID("test-button-menu"_spr);
-            fallbackMenu->addChild(myButton);
-            fallbackMenu->setPosition({winSize.width - 30.f, winSize.height - 30.f});
-            this->addChild(fallbackMenu);
-        }
+        m_icon = CCSprite::create("hoshino-button.png"_spr);
+        m_icon->setScale(0.5f);
+        m_icon->setPosition({posX, posY});
+        this->addChild(m_icon, 100);
+
+        this->setTouchEnabled(true);
+        this->setTouchMode(kCCTouchesOneByOne);
 
         return true;
     }
 
-    void onTestButton(CCObject* sender) {
-        // Jangan bikin panel baru kalau udah ada yang kebuka
-        if (this->getChildByID("hoshino-panel"_spr)) {
+    void registerWithTouchDispatcher() {
+        CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(this, -1000, true);
+    }
+
+    bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
+        auto local = this->convertTouchToNodeSpace(touch);
+        auto box = m_icon->boundingBox();
+
+        if (box.containsPoint(local)) {
+            m_dragging = true;
+            m_touchStartLocal = local;
+            m_iconStartPos = m_icon->getPosition();
+            return true;
+        }
+        return false;
+    }
+
+    void ccTouchMoved(CCTouch* touch, CCEvent* event) {
+        if (!m_dragging) return;
+
+        auto local = this->convertTouchToNodeSpace(touch);
+        auto delta = ccpSub(local, m_touchStartLocal);
+        auto newPos = ccpAdd(m_iconStartPos, delta);
+
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
+        auto contentSize = m_icon->getContentSize();
+        float halfW = (contentSize.width * m_icon->getScale()) / 2.f;
+        float halfH = (contentSize.height * m_icon->getScale()) / 2.f;
+
+        newPos.x = clampf(newPos.x, halfW, winSize.width - halfW);
+        newPos.y = clampf(newPos.y, halfH, winSize.height - halfH);
+
+        m_icon->setPosition(newPos);
+
+        if (m_panel) {
+            m_panel->setPosition(newPos);
+        }
+    }
+
+    void ccTouchEnded(CCTouch* touch, CCEvent* event) {
+        if (!m_dragging) return;
+        m_dragging = false;
+
+        auto local = this->convertTouchToNodeSpace(touch);
+        float dist = ccpDistance(local, m_touchStartLocal);
+
+        if (dist < kDragThreshold) {
+            togglePanel();
+        } else {
+            auto pos = m_icon->getPosition();
+            Mod::get()->setSavedValue("hoshino-pos-x", pos.x);
+            Mod::get()->setSavedValue("hoshino-pos-y", pos.y);
+        }
+    }
+
+    void ccTouchCancelled(CCTouch* touch, CCEvent* event) {
+        m_dragging = false;
+    }
+
+    void togglePanel() {
+        if (m_panel) {
+            m_panel->removeFromParentAndCleanup(true);
+            m_panel = nullptr;
             return;
         }
-        auto panel = HoshinoPanel::create();
-        panel->setID("hoshino-panel"_spr);
-        this->addChild(panel, 1000);
+
+        m_panel = HoshinoPanel::create();
+        this->addChild(m_panel, 50);
     }
 };
 
 // =========================================================
-// HOOK PLAY LAYER - KEYBIND & DEATH PREVENTION
+// PASANG OVERLAY SEKALI PAS GAME START (GLOBAL, SATU INSTANCE)
+// =========================================================
+
+class $modify(HoshinoAppDelegate, AppDelegate) {
+    void applicationDidFinishLaunching() {
+        AppDelegate::applicationDidFinishLaunching();
+
+        auto overlay = HoshinoOverlay::create();
+        overlay->retain();
+
+        CCDirector::sharedDirector()->setNotificationNode(overlay);
+    }
+};
+
+// =========================================================
+// HOOK PLAY LAYER - KEYBIND & DEATH PREVENTION (tidak berubah)
 // =========================================================
 
 class $modify(NoclipPlayLayer, PlayLayer) {
