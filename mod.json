@@ -6,17 +6,23 @@
         "mac": "*"
     },
     "version": "v1.0.0",
-    "id": "com.clausewitz.noclip",
-    "name": "Noclip Toggle",
-    "developer": "SeaPRST || Died100",
-    "description": "Toggle noclip on/off pake tombol N",
-    "repository": "https://github.com/perruldza-sys/geode-test-mod",
-    "tags": ["cheat", "utility"],
+    "id": "com.clausewitz.testbutton",
+    "name": "Test Button",
+    "developer": "Clausewitz",
+    "description": "Cuma tes tes - nambahin satu tombol tes di menu utama.",
+    "repository": "",
+    "tags": ["interface", "utility"],
+    "resources": {
+        "sprites": [
+            "resources/*.png"
+        ],
+        "spritesheets": {}
+    },
     "settings": {
-    "noclip-on-start": {
-        "name": "Noclip saat mulai level",
-        "type": "bool",
-        "default": false
-    }
+        "noclip-on-start": {
+            "name": "Noclip saat mulai level",
+            "type": "bool",
+            "default": false
+        }
     }
 }
