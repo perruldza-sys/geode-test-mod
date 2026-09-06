@@ -93,6 +93,7 @@ public:
         return true;
     }
 
+    // Panel juga bisa di-drag lewat header-nya (30px teratas)
     bool isInHeader(CCPoint local) {
         return local.x >= 0 && local.x <= m_panelSize.x
             && local.y >= m_panelSize.y - 30.f && local.y <= m_panelSize.y;
@@ -157,6 +158,7 @@ public:
 
         auto winSize = CCDirector::sharedDirector()->getWinSize();
 
+        // Posisi default: pojok kanan bawah. Kalau ada posisi tersimpan, pakai itu.
         float defaultX = winSize.width - 40.f;
         float defaultY = 40.f;
         float posX = Mod::get()->getSavedValue<float>("hoshino-pos-x", defaultX);
@@ -173,8 +175,9 @@ public:
         return true;
     }
 
+    // Prioritas tinggi biar icon selalu duluan nangkep sentuhan
     void registerWithTouchDispatcher() {
-        CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(this, -1000, true);
+        CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(this, -1000, true);
     }
 
     bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
@@ -185,9 +188,9 @@ public:
             m_dragging = true;
             m_touchStartLocal = local;
             m_iconStartPos = m_icon->getPosition();
-            return true;
+            return true; // tangkep sentuhannya, jangan diteruskan ke tombol di belakang
         }
-        return false;
+        return false; // biarin lewat kalau nggak kena icon
     }
 
     void ccTouchMoved(CCTouch* touch, CCEvent* event) {
@@ -197,6 +200,7 @@ public:
         auto delta = ccpSub(local, m_touchStartLocal);
         auto newPos = ccpAdd(m_iconStartPos, delta);
 
+        // Batasin biar nggak keluar layar
         auto winSize = CCDirector::sharedDirector()->getWinSize();
         auto contentSize = m_icon->getContentSize();
         float halfW = (contentSize.width * m_icon->getScale()) / 2.f;
@@ -220,8 +224,10 @@ public:
         float dist = ccpDistance(local, m_touchStartLocal);
 
         if (dist < kDragThreshold) {
+            // Ini tap, bukan drag -> buka/tutup panel
             togglePanel();
         } else {
+            // Ini drag -> simpan posisi baru
             auto pos = m_icon->getPosition();
             Mod::get()->setSavedValue("hoshino-pos-x", pos.x);
             Mod::get()->setSavedValue("hoshino-pos-y", pos.y);
@@ -249,13 +255,17 @@ public:
 // =========================================================
 
 class $modify(HoshinoAppDelegate, AppDelegate) {
-    void applicationDidFinishLaunching() {
-        AppDelegate::applicationDidFinishLaunching();
+    bool applicationDidFinishLaunching() {
+        auto ret = AppDelegate::applicationDidFinishLaunching();
 
         auto overlay = HoshinoOverlay::create();
         overlay->retain();
 
+        // Ini yang bikin overlay-nya tetap dirender di atas scene apapun,
+        // dan nggak ikut kehapus pas game pindah scene (Home <-> PlayLayer <-> dst).
         CCDirector::sharedDirector()->setNotificationNode(overlay);
+
+        return ret;
     }
 };
 
